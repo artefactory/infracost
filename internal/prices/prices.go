@@ -78,7 +78,9 @@ func GetPrices(ctx *config.RunContext, c *apiclient.PricingAPIClient, r *schema.
 
 	for _, r := range results {
 		setCostComponentPrice(ctx, c.Currency, r.Resource, r.CostComponent, r.Result)
-		setComponentEmissions(ctx, c.Currency, r.Resource, r.CostComponent, r.Result)
+		if c.EmissionsEnabled {
+			setComponentEmissions(ctx, c.Currency, r.Resource, r.CostComponent, r.Result)
+		}
 	}
 
 	return nil
