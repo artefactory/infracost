@@ -44,6 +44,13 @@ func ToHTML(out Root, opts Options) ([]byte, error) {
 		"filterZeroValResources":  filterZeroValResources,
 		"formatCost2DP":           func(d *decimal.Decimal) string { return formatCost2DP(out.Currency, d) },
 		"formatPrice":             func(d decimal.Decimal) string { return formatPrice(out.Currency, d) },
+		"formatEmissions":         func(d *decimal.Decimal) string { return formatEmissions(d, "kgCO2e") },
+		"customLength": func(s []string) int {
+			if contains(s, "monthlyEmissions") {
+				return len(s) - 1
+			}
+			return len(s)
+		},
 		"formatTitleWithCurrency": func(title string) string { return formatTitleWithCurrency(title, out.Currency) },
 		"formatQuantity":          formatQuantity,
 		"projectLabel": func(p Project) string {
