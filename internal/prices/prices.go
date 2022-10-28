@@ -194,15 +194,9 @@ func setComponentEmissions(ctx *config.RunContext, currency string, r *schema.Re
 	}
 
 	if len(productsWithEmissions) == 0 {
-		if c.IgnoreIfMissingPrice {
-			log.Debugf("No emissions found for %s %s, ignoring since IgnoreIfMissingPrice is set.", r.Name, c.Name)
-			r.RemoveCostComponent(c)
-			return
-		}
-
 		log.Warnf("No emissions found for %s %s, using 0.00", r.Name, c.Name)
 		setResourceWarningEvent(ctx, r, "No prices found")
-		c.SetPrice(decimal.Zero)
+		c.SetEmission(decimal.Zero)
 		return
 	}
 
@@ -222,7 +216,7 @@ func setComponentEmissions(ctx *config.RunContext, currency string, r *schema.Re
 	if err != nil {
 		log.Warnf("Error converting emissions to '%v' (using 0.00)  '%v': %s", "CO2e", emissions[0].Get("CO2e").String(), err.Error())
 		setResourceWarningEvent(ctx, r, "Error converting emission")
-		c.SetPrice(decimal.Zero)
+		c.SetEmission(decimal.Zero)
 		return
 	}
 
