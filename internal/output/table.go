@@ -76,15 +76,17 @@ func ToTable(out Root, opts Options) ([]byte, error) {
 	overallTitle := formatTitleWithCurrency(" OVERALL TOTAL", out.Currency)
 	emissionsShift := 0
 	priceShift := tableLen - (len(overallTitle) + 1)
+	totalEmissions := ""
 	if contains(opts.Fields, "monthlyEmissions") {
 		emissionsShift = len("Monthly Emissions") + 2
 		priceShift -= emissionsShift
+		totalEmissions = fmt.Sprintf("%*s", emissionsShift, formatEmissions(out.TotalMonthlykgCO2e, "kgCO2e"))
 	}
 
 	s += fmt.Sprintf("%s%s%s",
 		ui.BoldString(overallTitle),
 		fmt.Sprintf("%*s", priceShift, totalOut),
-		fmt.Sprintf("%*s", emissionsShift, formatEmissions(out.TotalMonthlykgCO2e, "kgCO2e")), // pad based on the last line length
+		totalEmissions, // pad based on the last line length
 	)
 
 	summaryMsg := out.summaryMessage(opts.ShowSkipped)
