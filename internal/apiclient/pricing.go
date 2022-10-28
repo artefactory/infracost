@@ -133,10 +133,14 @@ func (c *PricingAPIClient) buildQuery(product *schema.ProductFilter, price *sche
 				prices(filter: $priceFilter) {
 					priceHash
 					%s
+				},
+				emissions(filter: {}){
+					emissionHash
+					%s
 				}
 			}
 		}
-	`, c.Currency)
+	`, c.Currency, "CO2e")
 
 	return GraphQLQuery{query, v}
 }

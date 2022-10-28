@@ -130,7 +130,7 @@ func DefaultConfig() *Config {
 		Projects: []*Project{{}},
 
 		Format: "table",
-		Fields: []string{"monthlyQuantity", "unit", "monthlyCost"},
+		Fields: []string{"monthlyQuantity", "unit", "monthlyCost", "monthlyEmissions"},
 
 		EventsDisabled: IsTest(),
 	}

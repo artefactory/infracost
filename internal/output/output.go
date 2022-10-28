@@ -16,25 +16,28 @@ import (
 	"github.com/infracost/infracost/internal/usage"
 )
 
-var outputVersion = "0.2"
+var outputVersion = "0.3"
 
 type Root struct {
-	Version              string           `json:"version"`
-	Metadata             Metadata         `json:"metadata"`
-	RunID                string           `json:"runId,omitempty"`
-	ShareURL             string           `json:"shareUrl,omitempty"`
-	Currency             string           `json:"currency"`
-	Projects             Projects         `json:"projects"`
-	TotalHourlyCost      *decimal.Decimal `json:"totalHourlyCost"`
-	TotalMonthlyCost     *decimal.Decimal `json:"totalMonthlyCost"`
-	PastTotalHourlyCost  *decimal.Decimal `json:"pastTotalHourlyCost"`
-	PastTotalMonthlyCost *decimal.Decimal `json:"pastTotalMonthlyCost"`
-	DiffTotalHourlyCost  *decimal.Decimal `json:"diffTotalHourlyCost"`
-	DiffTotalMonthlyCost *decimal.Decimal `json:"diffTotalMonthlyCost"`
-	TimeGenerated        time.Time        `json:"timeGenerated"`
-	Summary              *Summary         `json:"summary"`
-	FullSummary          *Summary         `json:"-"`
-	IsCIRun              bool             `json:"-"`
+	Version                string           `json:"version"`
+	Metadata               Metadata         `json:"metadata"`
+	RunID                  string           `json:"runId,omitempty"`
+	ShareURL               string           `json:"shareUrl,omitempty"`
+	Currency               string           `json:"currency"`
+	Projects               Projects         `json:"projects"`
+	TotalHourlyCost        *decimal.Decimal `json:"totalHourlyCost"`
+	TotalMonthlyCost       *decimal.Decimal `json:"totalMonthlyCost"`
+	TotalMonthlykgCO2e     *decimal.Decimal `json:"totalMonthlykgCO2e"`
+	PastTotalHourlyCost    *decimal.Decimal `json:"pastTotalHourlyCost"`
+	PastTotalMonthlyCost   *decimal.Decimal `json:"pastTotalMonthlyCost"`
+	PastTotalMonthlykgCO2e *decimal.Decimal `json:"pastTotalMonthlykgCO2e"`
+	DiffTotalHourlyCost    *decimal.Decimal `json:"diffTotalHourlyCost"`
+	DiffTotalMonthlyCost   *decimal.Decimal `json:"diffTotalMonthlyCost"`
+	DiffTotalMonthlykgCO2e *decimal.Decimal `json:"diffTotalMonthlykgCO2e"`
+	TimeGenerated          time.Time        `json:"timeGenerated"`
+	Summary                *Summary         `json:"summary"`
+	FullSummary            *Summary         `json:"-"`
+	IsCIRun                bool             `json:"-"`
 }
 
 type Project struct {
@@ -74,13 +77,14 @@ func convertOutputResources(outResources []Resource) []*schema.Resource {
 
 	for i, resource := range outResources {
 		resources[i] = &schema.Resource{
-			Name:           resource.Name,
-			CostComponents: convertCostComponents(resource.CostComponents),
-			ActualCosts:    convertActualCosts(resource.ActualCosts),
-			SubResources:   convertOutputResources(resource.SubResources),
-			HourlyCost:     resource.HourlyCost,
-			MonthlyCost:    resource.MonthlyCost,
-			ResourceType:   resource.ResourceType(),
+			Name:             resource.Name,
+			CostComponents:   convertCostComponents(resource.CostComponents),
+			ActualCosts:      convertActualCosts(resource.ActualCosts),
+			SubResources:     convertOutputResources(resource.SubResources),
+			HourlyCost:       resource.HourlyCost,
+			MonthlyCost:      resource.MonthlyCost,
+			MonthlyEmissions: resource.MonthlyEmissions,
+			ResourceType:     resource.ResourceType(),
 		}
 	}
 
@@ -92,13 +96,14 @@ func convertCostComponents(outComponents []CostComponent) []*schema.CostComponen
 
 	for i, c := range outComponents {
 		sc := &schema.CostComponent{
-			Name:            c.Name,
-			Unit:            c.Unit,
-			UnitMultiplier:  decimal.NewFromInt(1),
-			HourlyCost:      c.HourlyCost,
-			MonthlyCost:     c.MonthlyCost,
-			HourlyQuantity:  c.HourlyQuantity,
-			MonthlyQuantity: c.MonthlyQuantity,
+			Name:             c.Name,
+			Unit:             c.Unit,
+			UnitMultiplier:   decimal.NewFromInt(1),
+			HourlyCost:       c.HourlyCost,
+			MonthlyCost:      c.MonthlyCost,
+			MonthlyEmissions: c.MonthlyEmissions,
+			HourlyQuantity:   c.HourlyQuantity,
+			MonthlyQuantity:  c.MonthlyQuantity,
 		}
 		sc.SetPrice(c.Price)
 
@@ -163,19 +168,21 @@ func (p *Project) LabelWithMetadata() string {
 }
 
 type Breakdown struct {
-	Resources        []Resource       `json:"resources"`
-	TotalHourlyCost  *decimal.Decimal `json:"totalHourlyCost"`
-	TotalMonthlyCost *decimal.Decimal `json:"totalMonthlyCost"`
+	Resources             []Resource       `json:"resources"`
+	TotalHourlyCost       *decimal.Decimal `json:"totalHourlyCost"`
+	TotalMonthlyCost      *decimal.Decimal `json:"totalMonthlyCost"`
+	TotalMonthlyEmissions *decimal.Decimal `json:"totalMonthlyEmissions"`
 }
 
 type CostComponent struct {
-	Name            string           `json:"name"`
-	Unit            string           `json:"unit"`
-	HourlyQuantity  *decimal.Decimal `json:"hourlyQuantity"`
-	MonthlyQuantity *decimal.Decimal `json:"monthlyQuantity"`
-	Price           decimal.Decimal  `json:"price"`
-	HourlyCost      *decimal.Decimal `json:"hourlyCost"`
-	MonthlyCost     *decimal.Decimal `json:"monthlyCost"`
+	Name             string           `json:"name"`
+	Unit             string           `json:"unit"`
+	HourlyQuantity   *decimal.Decimal `json:"hourlyQuantity"`
+	MonthlyQuantity  *decimal.Decimal `json:"monthlyQuantity"`
+	Price            decimal.Decimal  `json:"price"`
+	HourlyCost       *decimal.Decimal `json:"hourlyCost"`
+	MonthlyCost      *decimal.Decimal `json:"monthlyCost"`
+	MonthlyEmissions *decimal.Decimal `json:"monthlyEmissions"`
 }
 
 type ActualCosts struct {
@@ -186,14 +193,15 @@ type ActualCosts struct {
 }
 
 type Resource struct {
-	Name           string                 `json:"name"`
-	Tags           map[string]string      `json:"tags,omitempty"`
-	Metadata       map[string]interface{} `json:"metadata"`
-	HourlyCost     *decimal.Decimal       `json:"hourlyCost"`
-	MonthlyCost    *decimal.Decimal       `json:"monthlyCost"`
-	CostComponents []CostComponent        `json:"costComponents,omitempty"`
-	ActualCosts    *ActualCosts           `json:"actualCosts,omitempty"`
-	SubResources   []Resource             `json:"subresources,omitempty"`
+	Name             string                 `json:"name"`
+	Tags             map[string]string      `json:"tags,omitempty"`
+	Metadata         map[string]interface{} `json:"metadata"`
+	HourlyCost       *decimal.Decimal       `json:"hourlyCost"`
+	MonthlyCost      *decimal.Decimal       `json:"monthlyCost"`
+	MonthlyEmissions *decimal.Decimal       `json:"monthlyEmissions"`
+	CostComponents   []CostComponent        `json:"costComponents,omitempty"`
+	ActualCosts      *ActualCosts           `json:"actualCosts,omitempty"`
+	SubResources     []Resource             `json:"subresources,omitempty"`
 }
 
 func (r Resource) ResourceType() string {
@@ -293,11 +301,13 @@ func outputBreakdown(resources []*schema.Resource) *Breakdown {
 	sortResources(arr, "")
 
 	totalMonthlyCost, totalHourlyCost := calculateTotalCosts(arr)
+	totalMonthlykgCO2e := calculateTotalkgCO2e(arr)
 
 	return &Breakdown{
-		Resources:        arr,
-		TotalHourlyCost:  totalMonthlyCost,
-		TotalMonthlyCost: totalHourlyCost,
+		Resources:             arr,
+		TotalHourlyCost:       totalMonthlyCost,
+		TotalMonthlyCost:      totalHourlyCost,
+		TotalMonthlyEmissions: totalMonthlykgCO2e,
 	}
 }
 
@@ -319,14 +329,15 @@ func outputResource(r *schema.Resource) Resource {
 	}
 
 	return Resource{
-		Name:           r.Name,
-		Metadata:       metadata,
-		Tags:           r.Tags,
-		HourlyCost:     r.HourlyCost,
-		MonthlyCost:    r.MonthlyCost,
-		CostComponents: comps,
-		ActualCosts:    actualCosts,
-		SubResources:   subresources,
+		Name:             r.Name,
+		Metadata:         metadata,
+		Tags:             r.Tags,
+		HourlyCost:       r.HourlyCost,
+		MonthlyCost:      r.MonthlyCost,
+		MonthlyEmissions: r.MonthlyEmissions,
+		CostComponents:   comps,
+		ActualCosts:      actualCosts,
+		SubResources:     subresources,
 	}
 }
 
@@ -334,13 +345,14 @@ func outputCostComponents(costComponents []*schema.CostComponent) []CostComponen
 	comps := make([]CostComponent, 0, len(costComponents))
 	for _, c := range costComponents {
 		comps = append(comps, CostComponent{
-			Name:            c.Name,
-			Unit:            c.Unit,
-			HourlyQuantity:  c.UnitMultiplierHourlyQuantity(),
-			MonthlyQuantity: c.UnitMultiplierMonthlyQuantity(),
-			Price:           c.UnitMultiplierPrice(),
-			HourlyCost:      c.HourlyCost,
-			MonthlyCost:     c.MonthlyCost,
+			Name:             c.Name,
+			Unit:             c.Unit,
+			HourlyQuantity:   c.UnitMultiplierHourlyQuantity(),
+			MonthlyQuantity:  c.UnitMultiplierMonthlyQuantity(),
+			Price:            c.UnitMultiplierPrice(),
+			HourlyCost:       c.HourlyCost,
+			MonthlyCost:      c.MonthlyCost,
+			MonthlyEmissions: c.MonthlyEmissions,
 		})
 	}
 	return comps
@@ -360,9 +372,9 @@ func outputActualCosts(ac *schema.ActualCosts) *ActualCosts {
 }
 
 func ToOutputFormat(projects []*schema.Project) (Root, error) {
-	var totalMonthlyCost, totalHourlyCost,
-		pastTotalMonthlyCost, pastTotalHourlyCost,
-		diffTotalMonthlyCost, diffTotalHourlyCost *decimal.Decimal
+	var totalMonthlyCost, totalHourlyCost, totalMonthlykgCO2e,
+		pastTotalMonthlyCost, pastTotalHourlyCost, pastTotalMonthlykgCO2e,
+		diffTotalMonthlyCost, diffTotalHourlyCost, diffTotalMonthlykgCO2e *decimal.Decimal
 
 	outProjects := make([]Project, 0, len(projects))
 	summaries := make([]*Summary, 0, len(projects))
@@ -387,6 +399,13 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 				}
 				totalMonthlyCost = decimalPtr(totalMonthlyCost.Add(*breakdown.TotalMonthlyCost))
 			}
+
+			if breakdown.TotalMonthlyEmissions != nil {
+				if totalMonthlykgCO2e == nil {
+					totalMonthlykgCO2e = decimalPtr(decimal.Zero)
+				}
+				totalMonthlykgCO2e = decimalPtr(totalMonthlykgCO2e.Add(*breakdown.TotalMonthlyEmissions))
+			}
 		}
 
 		if project.HasDiff {
@@ -407,6 +426,13 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 					}
 					pastTotalMonthlyCost = decimalPtr(pastTotalMonthlyCost.Add(*pastBreakdown.TotalMonthlyCost))
 				}
+
+				if pastBreakdown.TotalMonthlyEmissions != nil {
+					if pastTotalMonthlykgCO2e == nil {
+						pastTotalMonthlykgCO2e = decimalPtr(decimal.Zero)
+					}
+					pastTotalMonthlykgCO2e = decimalPtr(pastTotalMonthlykgCO2e.Add(*pastBreakdown.TotalMonthlyEmissions))
+				}
 			}
 
 			if diff != nil {
@@ -423,6 +449,13 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 					}
 					diffTotalMonthlyCost = decimalPtr(diffTotalMonthlyCost.Add(*diff.TotalMonthlyCost))
 				}
+
+				if diff.TotalMonthlyEmissions != nil {
+					if diffTotalMonthlykgCO2e == nil {
+						diffTotalMonthlykgCO2e = decimalPtr(decimal.Zero)
+					}
+				}
+				diffTotalMonthlykgCO2e = decimalPtr(diffTotalMonthlykgCO2e.Add(*diff.TotalMonthlyEmissions))
 			}
 		}
 
@@ -460,17 +493,20 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 	}
 
 	out := Root{
-		Version:              outputVersion,
-		Projects:             outProjects,
-		TotalHourlyCost:      totalHourlyCost,
-		TotalMonthlyCost:     totalMonthlyCost,
-		PastTotalHourlyCost:  pastTotalHourlyCost,
-		PastTotalMonthlyCost: pastTotalMonthlyCost,
-		DiffTotalHourlyCost:  diffTotalHourlyCost,
-		DiffTotalMonthlyCost: diffTotalMonthlyCost,
-		TimeGenerated:        time.Now().UTC(),
-		Summary:              MergeSummaries(summaries),
-		FullSummary:          MergeSummaries(fullSummaries),
+		Version:                outputVersion,
+		Projects:               outProjects,
+		TotalHourlyCost:        totalHourlyCost,
+		TotalMonthlyCost:       totalMonthlyCost,
+		TotalMonthlykgCO2e:     totalMonthlykgCO2e,
+		PastTotalHourlyCost:    pastTotalHourlyCost,
+		PastTotalMonthlyCost:   pastTotalMonthlyCost,
+		PastTotalMonthlykgCO2e: pastTotalMonthlykgCO2e,
+		DiffTotalHourlyCost:    diffTotalHourlyCost,
+		DiffTotalMonthlyCost:   diffTotalMonthlyCost,
+		DiffTotalMonthlykgCO2e: diffTotalMonthlykgCO2e,
+		TimeGenerated:          time.Now().UTC(),
+		Summary:                MergeSummaries(summaries),
+		FullSummary:            MergeSummaries(fullSummaries),
 	}
 
 	return out, nil
@@ -758,6 +794,22 @@ func calculateTotalCosts(resources []Resource) (*decimal.Decimal, *decimal.Decim
 	}
 
 	return totalHourlyCost, totalMonthlyCost
+}
+
+func calculateTotalkgCO2e(resources []Resource) *decimal.Decimal {
+	totalkgCO2e := decimalPtr(decimal.Zero)
+
+	for _, r := range resources {
+		if r.MonthlyEmissions != nil {
+			if totalkgCO2e == nil {
+				totalkgCO2e = decimalPtr(decimal.Zero)
+			}
+
+			totalkgCO2e = decimalPtr(totalkgCO2e.Add(*r.MonthlyEmissions))
+		}
+	}
+
+	return totalkgCO2e
 }
 
 func sortResources(resources []Resource, groupKey string) {

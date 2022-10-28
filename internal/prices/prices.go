@@ -78,6 +78,7 @@ func GetPrices(ctx *config.RunContext, c *apiclient.PricingAPIClient, r *schema.
 
 	for _, r := range results {
 		setCostComponentPrice(ctx, c.Currency, r.Resource, r.CostComponent, r.Result)
+		setComponentEmissions(ctx, c.Currency, r.Resource, r.CostComponent, r.Result)
 	}
 
 	return nil
@@ -157,6 +158,76 @@ func setCostComponentPrice(ctx *config.RunContext, currency string, r *schema.Re
 
 	c.SetPrice(p)
 	c.SetPriceHash(prices[0].Get("priceHash").String())
+}
+
+func setComponentEmissions(ctx *config.RunContext, currency string, r *schema.Resource, c *schema.CostComponent, res gjson.Result) {
+	var p decimal.Decimal
+
+	products := res.Get("data.products").Array()
+	if len(products) == 0 {
+		if c.IgnoreIfMissingPrice {
+			log.Debugf("No products found for %s %s, ignoring since IgnoreIfMissingPrice is set.", r.Name, c.Name)
+			r.RemoveCostComponent(c)
+			return
+		}
+
+		log.Warnf("No products found for %s %s, using 0.00", r.Name, c.Name)
+		setResourceWarningEvent(ctx, r, "No products found")
+		c.SetPrice(decimal.Zero)
+		return
+	}
+
+	if len(products) > 1 {
+		log.Debugf("Multiple products found for %s %s, filtering those with emissions", r.Name, c.Name)
+	}
+
+	// Some resources may have identical records in CPAPI for the same product
+	// filters, several products are always returned and they can only be
+	// distinguished by their prices. However if we pick the first product it may not
+	// have the price due to price filter and the lookup fails. Filtering the
+	// products with prices helps to solve that.
+	productsWithEmissions := []gjson.Result{}
+	for _, product := range products {
+		if len(product.Get("emissions").Array()) > 0 {
+			productsWithEmissions = append(productsWithEmissions, product)
+		}
+	}
+
+	if len(productsWithEmissions) == 0 {
+		if c.IgnoreIfMissingPrice {
+			log.Debugf("No emissions found for %s %s, ignoring since IgnoreIfMissingPrice is set.", r.Name, c.Name)
+			r.RemoveCostComponent(c)
+			return
+		}
+
+		log.Warnf("No emissions found for %s %s, using 0.00", r.Name, c.Name)
+		setResourceWarningEvent(ctx, r, "No prices found")
+		c.SetPrice(decimal.Zero)
+		return
+	}
+
+	if len(productsWithEmissions) > 1 {
+		log.Warnf("Multiple products with emissions found for %s %s, using the first product", r.Name, c.Name)
+		setResourceWarningEvent(ctx, r, "Multiple products found")
+	}
+
+	emissions := productsWithEmissions[0].Get("emissions").Array()
+	if len(emissions) > 1 {
+		log.Warnf("Multiple emissions found for %s %s, using the first price", r.Name, c.Name)
+		setResourceWarningEvent(ctx, r, "Multiple emissions found")
+	}
+
+	var err error
+	p, err = decimal.NewFromString(emissions[0].Get("CO2e").String())
+	if err != nil {
+		log.Warnf("Error converting emissions to '%v' (using 0.00)  '%v': %s", "CO2e", emissions[0].Get("CO2e").String(), err.Error())
+		setResourceWarningEvent(ctx, r, "Error converting emission")
+		c.SetPrice(decimal.Zero)
+		return
+	}
+
+	c.SetEmission(p)
+	c.SetEmissionHash(emissions[0].Get("emissionHash").String())
 }
 
 func setResourceWarningEvent(ctx *config.RunContext, r *schema.Resource, msg string) {

@@ -36,6 +36,12 @@ func formatCost2DP(currency string, d *decimal.Decimal) string {
 	}
 	return formatRoundedDecimalCurrency(currency, *d)
 }
+func formatEmissions(emissions *decimal.Decimal, unit string) string {
+	if emissions == nil {
+		return "-"
+	}
+	return fmt.Sprintf("%s %s", fmt.Sprint(emissions), unit)
+}
 
 func formatPrice(currency string, d decimal.Decimal) string {
 	if d.LessThan(decimal.NewFromFloat(0.1)) {

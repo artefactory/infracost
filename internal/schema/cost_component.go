@@ -17,8 +17,11 @@ type CostComponent struct {
 	price                decimal.Decimal
 	customPrice          *decimal.Decimal
 	priceHash            string
+	emission             decimal.Decimal
+	emissionHash         string
 	HourlyCost           *decimal.Decimal
 	MonthlyCost          *decimal.Decimal
+	MonthlyEmissions     *decimal.Decimal
 }
 
 func (c *CostComponent) CalculateCosts() {
@@ -29,6 +32,12 @@ func (c *CostComponent) CalculateCosts() {
 	if c.MonthlyQuantity != nil {
 		discountMul := decimal.NewFromFloat(1.0 - c.MonthlyDiscountPerc)
 		c.MonthlyCost = decimalPtr(c.price.Mul(*c.MonthlyQuantity).Mul(discountMul))
+	}
+}
+
+func (c *CostComponent) CalculateEmittedCO2() {
+	if c.MonthlyQuantity != nil {
+		c.MonthlyEmissions = decimalPtr(c.emission.Mul(*c.MonthlyQuantity))
 	}
 }
 
@@ -54,6 +63,22 @@ func (c *CostComponent) SetPriceHash(priceHash string) {
 
 func (c *CostComponent) PriceHash() string {
 	return c.priceHash
+}
+
+func (c *CostComponent) SetEmission(emission decimal.Decimal) {
+	c.emission = emission
+}
+
+func (c *CostComponent) Emission() decimal.Decimal {
+	return c.emission
+}
+
+func (c *CostComponent) SetEmissionHash(emissionHash string) {
+	c.emissionHash = emissionHash
+}
+
+func (c *CostComponent) EmissionHash() string {
+	return c.emissionHash
 }
 
 func (c *CostComponent) SetCustomPrice(price *decimal.Decimal) {
