@@ -160,13 +160,13 @@ func Combine(inputs []ReportInput) (Root, error) {
 
 	var totalHourlyCost *decimal.Decimal
 	var totalMonthlyCost *decimal.Decimal
-	var totalMonthlykgCO2e *decimal.Decimal
+	var totalMonthlyEmissions *decimal.Decimal
 	var pastTotalHourlyCost *decimal.Decimal
 	var pastTotalMonthlyCost *decimal.Decimal
-	var pastTotalMonthlykgCO2e *decimal.Decimal
+	var pastTotalMonthlyEmissions *decimal.Decimal
 	var diffTotalHourlyCost *decimal.Decimal
 	var diffTotalMonthlyCost *decimal.Decimal
-	var diffTotalMonthlykgCO2e *decimal.Decimal
+	var diffTotalMonthlyEmissions *decimal.Decimal
 
 	projects := make([]Project, 0)
 	summaries := make([]*Summary, 0, len(inputs))
@@ -201,11 +201,11 @@ func Combine(inputs []ReportInput) (Root, error) {
 			totalMonthlyCost = decimalPtr(totalMonthlyCost.Add(*input.Root.TotalMonthlyCost))
 		}
 
-		if input.Root.TotalMonthlykgCO2e != nil {
-			if totalMonthlykgCO2e == nil {
-				totalMonthlykgCO2e = decimalPtr(decimal.Zero)
+		if input.Root.TotalMonthlyEmissions != nil {
+			if totalMonthlyEmissions == nil {
+				totalMonthlyEmissions = decimalPtr(decimal.Zero)
 			}
-			totalMonthlykgCO2e = decimalPtr(totalMonthlykgCO2e.Add(*input.Root.TotalMonthlykgCO2e))
+			totalMonthlyEmissions = decimalPtr(totalMonthlyEmissions.Add(*input.Root.TotalMonthlyEmissions))
 		}
 
 		if input.Root.PastTotalHourlyCost != nil {
@@ -223,11 +223,11 @@ func Combine(inputs []ReportInput) (Root, error) {
 			pastTotalMonthlyCost = decimalPtr(pastTotalMonthlyCost.Add(*input.Root.PastTotalMonthlyCost))
 		}
 
-		if input.Root.PastTotalMonthlykgCO2e != nil {
-			if pastTotalMonthlykgCO2e == nil {
-				pastTotalMonthlykgCO2e = decimalPtr(decimal.Zero)
+		if input.Root.PastTotalMonthlyEmissions != nil {
+			if pastTotalMonthlyEmissions == nil {
+				pastTotalMonthlyEmissions = decimalPtr(decimal.Zero)
 			}
-			pastTotalMonthlykgCO2e = decimalPtr(pastTotalMonthlykgCO2e.Add(*input.Root.PastTotalMonthlykgCO2e))
+			pastTotalMonthlyEmissions = decimalPtr(pastTotalMonthlyEmissions.Add(*input.Root.PastTotalMonthlyEmissions))
 		}
 
 		if input.Root.DiffTotalMonthlyCost != nil {
@@ -246,11 +246,11 @@ func Combine(inputs []ReportInput) (Root, error) {
 			diffTotalHourlyCost = decimalPtr(diffTotalHourlyCost.Add(*input.Root.DiffTotalHourlyCost))
 		}
 
-		if input.Root.DiffTotalMonthlykgCO2e != nil {
-			if diffTotalMonthlykgCO2e == nil {
-				diffTotalMonthlykgCO2e = decimalPtr(decimal.Zero)
+		if input.Root.DiffTotalMonthlyEmissions != nil {
+			if diffTotalMonthlyEmissions == nil {
+				diffTotalMonthlyEmissions = decimalPtr(decimal.Zero)
 			}
-			diffTotalMonthlykgCO2e = decimalPtr(diffTotalMonthlykgCO2e.Add(*input.Root.DiffTotalMonthlykgCO2e))
+			diffTotalMonthlyEmissions = decimalPtr(diffTotalMonthlyEmissions.Add(*input.Root.DiffTotalMonthlyEmissions))
 		}
 
 		if i != 0 && metadata.VCSRepositoryURL != input.Root.Metadata.VCSRepositoryURL {
@@ -266,13 +266,13 @@ func Combine(inputs []ReportInput) (Root, error) {
 	combined.Projects = projects
 	combined.TotalHourlyCost = totalHourlyCost
 	combined.TotalMonthlyCost = totalMonthlyCost
-	combined.TotalMonthlykgCO2e = totalMonthlykgCO2e
+	combined.TotalMonthlyEmissions = totalMonthlyEmissions
 	combined.PastTotalHourlyCost = pastTotalHourlyCost
 	combined.PastTotalMonthlyCost = pastTotalMonthlyCost
-	combined.PastTotalMonthlykgCO2e = pastTotalMonthlykgCO2e
+	combined.PastTotalMonthlyEmissions = pastTotalMonthlyEmissions
 	combined.DiffTotalHourlyCost = diffTotalHourlyCost
 	combined.DiffTotalMonthlyCost = diffTotalMonthlyCost
-	combined.DiffTotalMonthlykgCO2e = diffTotalMonthlykgCO2e
+	combined.DiffTotalMonthlyEmissions = diffTotalMonthlyEmissions
 	combined.TimeGenerated = time.Now().UTC()
 	combined.Summary = MergeSummaries(summaries)
 	combined.Metadata = metadata

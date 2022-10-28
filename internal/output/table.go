@@ -80,7 +80,7 @@ func ToTable(out Root, opts Options) ([]byte, error) {
 	if contains(opts.Fields, "monthlyEmissions") {
 		emissionsShift = len("Monthly Emissions") + 2
 		priceShift -= emissionsShift
-		totalEmissions = fmt.Sprintf("%*s", emissionsShift, formatEmissions(out.TotalMonthlykgCO2e, "kgCO2e"))
+		totalEmissions = fmt.Sprintf("%*s", emissionsShift, formatEmissions(out.TotalMonthlyEmissions, "kgCO2e"))
 	}
 
 	s += fmt.Sprintf("%s%s%s",

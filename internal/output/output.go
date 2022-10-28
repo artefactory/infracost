@@ -19,25 +19,25 @@ import (
 var outputVersion = "0.3"
 
 type Root struct {
-	Version                string           `json:"version"`
-	Metadata               Metadata         `json:"metadata"`
-	RunID                  string           `json:"runId,omitempty"`
-	ShareURL               string           `json:"shareUrl,omitempty"`
-	Currency               string           `json:"currency"`
-	Projects               Projects         `json:"projects"`
-	TotalHourlyCost        *decimal.Decimal `json:"totalHourlyCost"`
-	TotalMonthlyCost       *decimal.Decimal `json:"totalMonthlyCost"`
-	TotalMonthlykgCO2e     *decimal.Decimal `json:"totalMonthlykgCO2e"`
-	PastTotalHourlyCost    *decimal.Decimal `json:"pastTotalHourlyCost"`
-	PastTotalMonthlyCost   *decimal.Decimal `json:"pastTotalMonthlyCost"`
-	PastTotalMonthlykgCO2e *decimal.Decimal `json:"pastTotalMonthlykgCO2e"`
-	DiffTotalHourlyCost    *decimal.Decimal `json:"diffTotalHourlyCost"`
-	DiffTotalMonthlyCost   *decimal.Decimal `json:"diffTotalMonthlyCost"`
-	DiffTotalMonthlykgCO2e *decimal.Decimal `json:"diffTotalMonthlykgCO2e"`
-	TimeGenerated          time.Time        `json:"timeGenerated"`
-	Summary                *Summary         `json:"summary"`
-	FullSummary            *Summary         `json:"-"`
-	IsCIRun                bool             `json:"-"`
+	Version                   string           `json:"version"`
+	Metadata                  Metadata         `json:"metadata"`
+	RunID                     string           `json:"runId,omitempty"`
+	ShareURL                  string           `json:"shareUrl,omitempty"`
+	Currency                  string           `json:"currency"`
+	Projects                  Projects         `json:"projects"`
+	TotalHourlyCost           *decimal.Decimal `json:"totalHourlyCost"`
+	TotalMonthlyCost          *decimal.Decimal `json:"totalMonthlyCost"`
+	TotalMonthlyEmissions     *decimal.Decimal `json:"totalMonthlyEmissions"`
+	PastTotalHourlyCost       *decimal.Decimal `json:"pastTotalHourlyCost"`
+	PastTotalMonthlyCost      *decimal.Decimal `json:"pastTotalMonthlyCost"`
+	PastTotalMonthlyEmissions *decimal.Decimal `json:"pastTotalMonthlyEmissions"`
+	DiffTotalHourlyCost       *decimal.Decimal `json:"diffTotalHourlyCost"`
+	DiffTotalMonthlyCost      *decimal.Decimal `json:"diffTotalMonthlyCost"`
+	DiffTotalMonthlyEmissions *decimal.Decimal `json:"diffTotalMonthlyEmissions"`
+	TimeGenerated             time.Time        `json:"timeGenerated"`
+	Summary                   *Summary         `json:"summary"`
+	FullSummary               *Summary         `json:"-"`
+	IsCIRun                   bool             `json:"-"`
 }
 
 type Project struct {
@@ -372,9 +372,9 @@ func outputActualCosts(ac *schema.ActualCosts) *ActualCosts {
 }
 
 func ToOutputFormat(projects []*schema.Project) (Root, error) {
-	var totalMonthlyCost, totalHourlyCost, totalMonthlykgCO2e,
-		pastTotalMonthlyCost, pastTotalHourlyCost, pastTotalMonthlykgCO2e,
-		diffTotalMonthlyCost, diffTotalHourlyCost, diffTotalMonthlykgCO2e *decimal.Decimal
+	var totalMonthlyCost, totalHourlyCost, totalMonthlyEmissions,
+		pastTotalMonthlyCost, pastTotalHourlyCost, pastTotalMonthlyEmissions,
+		diffTotalMonthlyCost, diffTotalHourlyCost, diffTotalMonthlyEmissions *decimal.Decimal
 
 	outProjects := make([]Project, 0, len(projects))
 	summaries := make([]*Summary, 0, len(projects))
@@ -401,10 +401,10 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 			}
 
 			if breakdown.TotalMonthlyEmissions != nil {
-				if totalMonthlykgCO2e == nil {
-					totalMonthlykgCO2e = decimalPtr(decimal.Zero)
+				if totalMonthlyEmissions == nil {
+					totalMonthlyEmissions = decimalPtr(decimal.Zero)
 				}
-				totalMonthlykgCO2e = decimalPtr(totalMonthlykgCO2e.Add(*breakdown.TotalMonthlyEmissions))
+				totalMonthlyEmissions = decimalPtr(totalMonthlyEmissions.Add(*breakdown.TotalMonthlyEmissions))
 			}
 		}
 
@@ -428,10 +428,10 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 				}
 
 				if pastBreakdown.TotalMonthlyEmissions != nil {
-					if pastTotalMonthlykgCO2e == nil {
-						pastTotalMonthlykgCO2e = decimalPtr(decimal.Zero)
+					if pastTotalMonthlyEmissions == nil {
+						pastTotalMonthlyEmissions = decimalPtr(decimal.Zero)
 					}
-					pastTotalMonthlykgCO2e = decimalPtr(pastTotalMonthlykgCO2e.Add(*pastBreakdown.TotalMonthlyEmissions))
+					pastTotalMonthlyEmissions = decimalPtr(pastTotalMonthlyEmissions.Add(*pastBreakdown.TotalMonthlyEmissions))
 				}
 			}
 
@@ -451,11 +451,11 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 				}
 
 				if diff.TotalMonthlyEmissions != nil {
-					if diffTotalMonthlykgCO2e == nil {
-						diffTotalMonthlykgCO2e = decimalPtr(decimal.Zero)
+					if diffTotalMonthlyEmissions == nil {
+						diffTotalMonthlyEmissions = decimalPtr(decimal.Zero)
 					}
 				}
-				diffTotalMonthlykgCO2e = decimalPtr(diffTotalMonthlykgCO2e.Add(*diff.TotalMonthlyEmissions))
+				diffTotalMonthlyEmissions = decimalPtr(diffTotalMonthlyEmissions.Add(*diff.TotalMonthlyEmissions))
 			}
 		}
 
@@ -493,20 +493,20 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 	}
 
 	out := Root{
-		Version:                outputVersion,
-		Projects:               outProjects,
-		TotalHourlyCost:        totalHourlyCost,
-		TotalMonthlyCost:       totalMonthlyCost,
-		TotalMonthlykgCO2e:     totalMonthlykgCO2e,
-		PastTotalHourlyCost:    pastTotalHourlyCost,
-		PastTotalMonthlyCost:   pastTotalMonthlyCost,
-		PastTotalMonthlykgCO2e: pastTotalMonthlykgCO2e,
-		DiffTotalHourlyCost:    diffTotalHourlyCost,
-		DiffTotalMonthlyCost:   diffTotalMonthlyCost,
-		DiffTotalMonthlykgCO2e: diffTotalMonthlykgCO2e,
-		TimeGenerated:          time.Now().UTC(),
-		Summary:                MergeSummaries(summaries),
-		FullSummary:            MergeSummaries(fullSummaries),
+		Version:                   outputVersion,
+		Projects:                  outProjects,
+		TotalHourlyCost:           totalHourlyCost,
+		TotalMonthlyCost:          totalMonthlyCost,
+		TotalMonthlyEmissions:     totalMonthlyEmissions,
+		PastTotalHourlyCost:       pastTotalHourlyCost,
+		PastTotalMonthlyCost:      pastTotalMonthlyCost,
+		PastTotalMonthlyEmissions: pastTotalMonthlyEmissions,
+		DiffTotalHourlyCost:       diffTotalHourlyCost,
+		DiffTotalMonthlyCost:      diffTotalMonthlyCost,
+		DiffTotalMonthlyEmissions: diffTotalMonthlyEmissions,
+		TimeGenerated:             time.Now().UTC(),
+		Summary:                   MergeSummaries(summaries),
+		FullSummary:               MergeSummaries(fullSummaries),
 	}
 
 	return out, nil
