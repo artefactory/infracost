@@ -16,7 +16,7 @@ import (
 	"github.com/infracost/infracost/internal/usage"
 )
 
-var outputVersion = "0.3"
+var outputVersion = "0.2"
 
 type Root struct {
 	Version                   string           `json:"version"`
@@ -301,13 +301,13 @@ func outputBreakdown(resources []*schema.Resource) *Breakdown {
 	sortResources(arr, "")
 
 	totalMonthlyCost, totalHourlyCost := calculateTotalCosts(arr)
-	totalMonthlykgCO2e := calculateTotalkgCO2e(arr)
+	totalMonthlyEmissions := calculateTotalEmissions(arr)
 
 	return &Breakdown{
 		Resources:             arr,
 		TotalHourlyCost:       totalMonthlyCost,
 		TotalMonthlyCost:      totalHourlyCost,
-		TotalMonthlyEmissions: totalMonthlykgCO2e,
+		TotalMonthlyEmissions: totalMonthlyEmissions,
 	}
 }
 
@@ -454,8 +454,8 @@ func ToOutputFormat(projects []*schema.Project) (Root, error) {
 					if diffTotalMonthlyEmissions == nil {
 						diffTotalMonthlyEmissions = decimalPtr(decimal.Zero)
 					}
+					diffTotalMonthlyEmissions = decimalPtr(diffTotalMonthlyEmissions.Add(*diff.TotalMonthlyEmissions))
 				}
-				diffTotalMonthlyEmissions = decimalPtr(diffTotalMonthlyEmissions.Add(*diff.TotalMonthlyEmissions))
 			}
 		}
 
@@ -796,20 +796,20 @@ func calculateTotalCosts(resources []Resource) (*decimal.Decimal, *decimal.Decim
 	return totalHourlyCost, totalMonthlyCost
 }
 
-func calculateTotalkgCO2e(resources []Resource) *decimal.Decimal {
-	totalkgCO2e := decimalPtr(decimal.Zero)
+func calculateTotalEmissions(resources []Resource) *decimal.Decimal {
+	totalEmissions := decimalPtr(decimal.Zero)
 
 	for _, r := range resources {
 		if r.MonthlyEmissions != nil {
-			if totalkgCO2e == nil {
-				totalkgCO2e = decimalPtr(decimal.Zero)
+			if totalEmissions == nil {
+				totalEmissions = decimalPtr(decimal.Zero)
 			}
 
-			totalkgCO2e = decimalPtr(totalkgCO2e.Add(*r.MonthlyEmissions))
+			totalEmissions = decimalPtr(totalEmissions.Add(*r.MonthlyEmissions))
 		}
 	}
 
-	return totalkgCO2e
+	return totalEmissions
 }
 
 func sortResources(resources []Resource, groupKey string) {
