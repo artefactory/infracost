@@ -119,6 +119,10 @@ func formatTitleWithCurrency(title, currency string) string {
 	return fmt.Sprintf("%s (%s)", title, currency)
 }
 
+func formatTitleEmissions(title string) string {
+	return fmt.Sprintf("%s", title)
+}
+
 func truncateMiddle(s string, maxLen int, fill string) string {
 	r := []rune(s)
 

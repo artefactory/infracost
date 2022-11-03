@@ -84,8 +84,9 @@ func diffResourcesByKey(resourceKey string, pastResMap, currentResMap map[string
 		ResourceType: baseResource.ResourceType,
 		Tags:         baseResource.Tags,
 
-		HourlyCost:  diffDecimals(current.HourlyCost, past.HourlyCost),
-		MonthlyCost: diffDecimals(current.MonthlyCost, past.MonthlyCost),
+		HourlyCost:       diffDecimals(current.HourlyCost, past.HourlyCost),
+		MonthlyCost:      diffDecimals(current.MonthlyCost, past.MonthlyCost),
+		MonthlyEmissions: diffDecimals(current.MonthlyEmissions, past.MonthlyEmissions),
 	}
 	for _, subResource := range past.SubResources {
 		subKey := fmt.Sprintf("%v.%v", resourceKey, subResource.Name)
@@ -193,10 +194,12 @@ func diffCostComponents(past *CostComponent, current *CostComponent) (bool, *Cos
 		price:               *diffDecimals(&current.price, &past.price),
 		HourlyCost:          diffDecimals(current.HourlyCost, past.HourlyCost),
 		MonthlyCost:         diffDecimals(current.MonthlyCost, past.MonthlyCost),
+		MonthlyEmissions:    diffDecimals(current.MonthlyEmissions, past.MonthlyEmissions),
 	}
 	if !diff.HourlyQuantity.IsZero() || !diff.MonthlyQuantity.IsZero() ||
 		diff.MonthlyDiscountPerc != 0 || !diff.price.IsZero() ||
-		!diff.HourlyCost.IsZero() || !diff.MonthlyCost.IsZero() {
+		!diff.HourlyCost.IsZero() || !diff.MonthlyCost.IsZero() ||
+		!diff.MonthlyEmissions.IsZero() {
 		changed = true
 	}
 

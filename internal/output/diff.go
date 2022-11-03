@@ -18,6 +18,7 @@ const (
 )
 
 func ToDiff(out Root, opts Options) ([]byte, error) {
+	showEmissions := contains(opts.Fields, "monthlyEmissions")
 	s := ""
 
 	noDiffProjects := make([]string, 0)
@@ -62,18 +63,22 @@ func ToDiff(out Root, opts Options) ([]byte, error) {
 			oldResource := findResourceByName(project.PastBreakdown.Resources, diffResource.Name)
 			newResource := findResourceByName(project.Breakdown.Resources, diffResource.Name)
 
-			s += resourceToDiff(out.Currency, diffResource, oldResource, newResource, true)
+			s += resourceToDiff(out.Currency, diffResource, oldResource, newResource, true, showEmissions)
 			s += "\n"
 		}
 
 		var oldCost *decimal.Decimal
+		var oldEmissions *decimal.Decimal
 		if project.PastBreakdown != nil {
 			oldCost = project.PastBreakdown.TotalMonthlyCost
+			oldEmissions = project.PastBreakdown.TotalMonthlyEmissions
 		}
 
 		var newCost *decimal.Decimal
+		var newEmissions *decimal.Decimal
 		if project.Breakdown != nil {
 			newCost = project.Breakdown.TotalMonthlyCost
+			newEmissions = project.Breakdown.TotalMonthlyEmissions
 		}
 
 		s += fmt.Sprintf("%s %s\nAmount:  %s %s",
@@ -91,6 +96,24 @@ func ToDiff(out Root, opts Options) ([]byte, error) {
 		}
 
 		s += "\n\n"
+
+		if showEmissions {
+			s += fmt.Sprintf("%s %s\nAmount:  %s %s",
+				ui.BoldString("Monthly emissions change for"),
+				ui.BoldString(project.LabelWithMetadata()),
+				formatTitleEmissions(formatEmissionsChange(project.Diff.TotalMonthlyEmissions, "kgCO2e")),
+				ui.FaintStringf("(%s → %s)", formatEmissions(oldEmissions, "kgCO2e"), formatEmissions(newEmissions, "kgCO2e")),
+			)
+
+			percent = formatPercentChange(oldEmissions, newEmissions)
+			if percent != "" {
+				s += fmt.Sprintf("\nPercent: %s",
+					percent,
+				)
+			}
+
+			s += "\n\n"
+		}
 	}
 
 	if len(noDiffProjects) > 0 {
@@ -120,7 +143,7 @@ func ToDiff(out Root, opts Options) ([]byte, error) {
 	return []byte(s), nil
 }
 
-func resourceToDiff(currency string, diffResource Resource, oldResource *Resource, newResource *Resource, isTopLevel bool) string {
+func resourceToDiff(currency string, diffResource Resource, oldResource *Resource, newResource *Resource, isTopLevel, showEmissions bool) string {
 	s := ""
 
 	op := UPDATED
@@ -131,13 +154,17 @@ func resourceToDiff(currency string, diffResource Resource, oldResource *Resourc
 	}
 
 	var oldCost *decimal.Decimal
+	var oldEmissions *decimal.Decimal
 	if oldResource != nil {
 		oldCost = oldResource.MonthlyCost
+		oldEmissions = oldResource.MonthlyEmissions
 	}
 
 	var newCost *decimal.Decimal
+	var newEmissions *decimal.Decimal
 	if newResource != nil {
 		newCost = newResource.MonthlyCost
+		newEmissions = newResource.MonthlyEmissions
 	}
 
 	nameLabel := diffResource.Name
@@ -156,6 +183,16 @@ func resourceToDiff(currency string, diffResource Resource, oldResource *Resourc
 				ui.FaintString(formatCostChangeDetails(currency, oldCost, newCost)),
 			)
 		}
+		if showEmissions {
+			if oldEmissions == nil && newEmissions == nil {
+				s += "  Monthly emissions depends on usage\n"
+			} else {
+				s += fmt.Sprintf("  %s%s\n",
+					formatEmissionsChange(diffResource.MonthlyEmissions, "kgCO2e"),
+					ui.FaintString(formatEmissionsChangeDetails(oldEmissions, newEmissions, "kgCO2e")),
+				)
+			}
+		}
 	}
 
 	for _, diffComponent := range diffResource.CostComponents {
@@ -170,7 +207,7 @@ func resourceToDiff(currency string, diffResource Resource, oldResource *Resourc
 		}
 
 		s += "\n"
-		s += ui.Indent(costComponentToDiff(currency, diffComponent, oldComponent, newComponent), "    ")
+		s += ui.Indent(costComponentToDiff(currency, diffComponent, oldComponent, newComponent, showEmissions), "    ")
 	}
 
 	for _, diffSubResource := range diffResource.SubResources {
@@ -185,13 +222,13 @@ func resourceToDiff(currency string, diffResource Resource, oldResource *Resourc
 		}
 
 		s += "\n"
-		s += ui.Indent(resourceToDiff(currency, diffSubResource, oldSubResource, newSubResource, false), "    ")
+		s += ui.Indent(resourceToDiff(currency, diffSubResource, oldSubResource, newSubResource, false, showEmissions), "    ")
 	}
 
 	return s
 }
 
-func costComponentToDiff(currency string, diffComponent CostComponent, oldComponent *CostComponent, newComponent *CostComponent) string {
+func costComponentToDiff(currency string, diffComponent CostComponent, oldComponent *CostComponent, newComponent *CostComponent, showEmissions bool) string {
 	s := ""
 
 	op := UPDATED
@@ -202,19 +239,32 @@ func costComponentToDiff(currency string, diffComponent CostComponent, oldCompon
 	}
 
 	var oldCost, newCost, oldPrice, newPrice *decimal.Decimal
+	var oldEmissions, newEmissions *decimal.Decimal
 
 	if oldComponent != nil {
 		oldCost = oldComponent.MonthlyCost
 		oldPrice = &oldComponent.Price
+		oldEmissions = oldComponent.MonthlyEmissions
 	}
 
 	if newComponent != nil {
 		newCost = newComponent.MonthlyCost
 		newPrice = &newComponent.Price
+		newEmissions = newComponent.MonthlyEmissions
 	}
 
 	s += fmt.Sprintf("%s %s\n", opChar(op), colorizeDiffName(diffComponent.Name))
 
+	if showEmissions {
+		if oldEmissions == nil && newEmissions == nil {
+			s += "  Monthly emissions depends on usage\n"
+		} else {
+			s += fmt.Sprintf("  %s%s\n",
+				formatEmissionsChange(diffComponent.MonthlyEmissions, "kgCO2e"),
+				ui.FaintString(formatEmissionsChangeDetails(oldEmissions, newEmissions, "kgCO2e")),
+			)
+		}
+	}
 	if oldCost == nil && newCost == nil {
 		s += "  Monthly cost depends on usage\n"
 		s += fmt.Sprintf("    %s per %s%s\n",
@@ -287,12 +337,29 @@ func formatCostChange(currency string, d *decimal.Decimal) string {
 	return fmt.Sprintf("%s%s", getSym(*d), formatCost(currency, &abs))
 }
 
+func formatEmissionsChange(d *decimal.Decimal, unit string) string {
+	if d == nil {
+		return "/"
+	}
+
+	abs := d.Abs()
+	return fmt.Sprintf("%s%s", getSym(*d), formatEmissions(&abs, unit))
+}
+
 func formatCostChangeDetails(currency string, oldCost *decimal.Decimal, newCost *decimal.Decimal) string {
 	if oldCost == nil || newCost == nil {
 		return ""
 	}
 
 	return fmt.Sprintf(" (%s → %s)", formatCost(currency, oldCost), formatCost(currency, newCost))
+}
+
+func formatEmissionsChangeDetails(oldEmissions *decimal.Decimal, newEmissions *decimal.Decimal, unit string) string {
+	if oldEmissions == nil || newEmissions == nil {
+		return ""
+	}
+
+	return fmt.Sprintf(" (%s → %s)", formatEmissions(oldEmissions, unit), formatEmissions(newEmissions, unit))
 }
 
 func formatPriceChange(currency string, d decimal.Decimal) string {
@@ -309,7 +376,7 @@ func formatPriceChangeDetails(currency string, oldPrice *decimal.Decimal, newPri
 }
 
 func formatPercentChange(oldCost *decimal.Decimal, newCost *decimal.Decimal) string {
-	if oldCost == nil || oldCost.IsZero() || newCost == nil || newCost.IsZero() {
+	if oldCost == nil || oldCost.IsZero() || newCost == nil {
 		return ""
 	}
 
