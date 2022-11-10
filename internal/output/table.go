@@ -202,10 +202,16 @@ func tableForBreakdown(currency string, breakdown Breakdown, fields []string, in
 		var totalCostRow table.Row
 		totalCostRow = append(totalCostRow, ui.BoldString(formatTitleWithCurrency("Project total", currency)))
 		numOfFields := i - 3
+		if contains(fields, "monthlyEmissions") {
+			numOfFields -= 1
+		}
 		for q := 0; q < numOfFields; q++ {
 			totalCostRow = append(totalCostRow, "")
 		}
 		totalCostRow = append(totalCostRow, formatCost2DP(currency, breakdown.TotalMonthlyCost))
+		if contains(fields, "monthlyEmissions") {
+			totalCostRow = append(totalCostRow, ui.BoldString(formatEmissions(breakdown.TotalMonthlyEmissions, "kgCO2e")))
+		}
 		t.AppendRow(totalCostRow)
 	}
 

@@ -106,6 +106,7 @@ func convertCostComponents(outComponents []CostComponent) []*schema.CostComponen
 			MonthlyQuantity:  c.MonthlyQuantity,
 		}
 		sc.SetPrice(c.Price)
+		sc.SetEmission(c.Emission)
 
 		components[i] = sc
 	}
@@ -180,6 +181,7 @@ type CostComponent struct {
 	HourlyQuantity   *decimal.Decimal `json:"hourlyQuantity"`
 	MonthlyQuantity  *decimal.Decimal `json:"monthlyQuantity"`
 	Price            decimal.Decimal  `json:"price"`
+	Emission         decimal.Decimal  `json:"emission"`
 	HourlyCost       *decimal.Decimal `json:"hourlyCost"`
 	MonthlyCost      *decimal.Decimal `json:"monthlyCost"`
 	MonthlyEmissions *decimal.Decimal `json:"monthlyEmissions"`
