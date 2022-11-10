@@ -136,7 +136,7 @@ func (c *PricingAPIClient) buildQuery(product *schema.ProductFilter, price *sche
 				emissionHash
 				%s
 			}
-		`, "CO2e")
+		`, "emissions")
 	}
 
 	query := fmt.Sprintf(`

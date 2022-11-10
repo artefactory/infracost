@@ -214,9 +214,9 @@ func setComponentEmissions(ctx *config.RunContext, currency string, r *schema.Re
 	}
 
 	var err error
-	p, err = decimal.NewFromString(emissions[0].Get("CO2e").String())
+	p, err = decimal.NewFromString(emissions[0].Get("emissions").String())
 	if err != nil {
-		log.Warnf("Error converting emissions to '%v' (using 0.00)  '%v': %s", "CO2e", emissions[0].Get("CO2e").String(), err.Error())
+		log.Warnf("Error converting emissions to '%v' (using 0.00)  '%v': %s", "emissions", emissions[0].Get("emissions").String(), err.Error())
 		setResourceWarningEvent(ctx, r, "Error converting emission")
 		c.SetEmission(decimal.Zero)
 		return
