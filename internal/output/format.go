@@ -40,7 +40,12 @@ func formatEmissions(emissions *decimal.Decimal, unit string) string {
 	if emissions == nil {
 		return "-"
 	}
-	return fmt.Sprintf("%s %s", fmt.Sprint(emissions), unit)
+	return fmt.Sprintf("%s %s", fmt.Sprint(formatRoundedDecimalEmissions(*emissions)), unit)
+}
+
+func formatRoundedDecimalEmissions(d decimal.Decimal) *decimal.Decimal {
+	d = d.Round(1)
+	return &d
 }
 
 func formatPrice(currency string, d decimal.Decimal) string {
@@ -71,6 +76,10 @@ func formatWholeDecimalCurrency(currency string, d decimal.Decimal) string {
 	scaledInt := decimalToScaledInt(d, 0, 0)
 	formatter.Fraction = scaledInt.FractionLength
 	return formatter.Format(scaledInt.Number)
+}
+
+func formatWholeDecimalEmissions(d decimal.Decimal) string {
+	return fmt.Sprintf("%s", fmt.Sprint(d))
 }
 
 type scaledInt64 struct {
