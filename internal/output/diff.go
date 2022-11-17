@@ -255,16 +255,6 @@ func costComponentToDiff(currency string, diffComponent CostComponent, oldCompon
 
 	s += fmt.Sprintf("%s %s\n", opChar(op), colorizeDiffName(diffComponent.Name))
 
-	if showEmissions {
-		if oldEmissions == nil && newEmissions == nil {
-			s += "  Monthly emissions depends on usage\n"
-		} else {
-			s += fmt.Sprintf("  %s%s\n",
-				formatEmissionsChange(diffComponent.MonthlyEmissions, "kgCO2e"),
-				ui.FaintString(formatEmissionsChangeDetails(oldEmissions, newEmissions, "kgCO2e")),
-			)
-		}
-	}
 	if oldCost == nil && newCost == nil {
 		s += "  Monthly cost depends on usage\n"
 		s += fmt.Sprintf("    %s per %s%s\n",
@@ -277,6 +267,17 @@ func costComponentToDiff(currency string, diffComponent CostComponent, oldCompon
 			formatCostChange(currency, diffComponent.MonthlyCost),
 			ui.FaintString(formatCostChangeDetails(currency, oldCost, newCost)),
 		)
+	}
+
+	if showEmissions {
+		if oldEmissions == nil && newEmissions == nil {
+			s += "  Monthly emissions depends on usage\n"
+		} else {
+			s += fmt.Sprintf("  %s%s\n",
+				formatEmissionsChange(diffComponent.MonthlyEmissions, "kgCO2e"),
+				ui.FaintString(formatEmissionsChangeDetails(oldEmissions, newEmissions, "kgCO2e")),
+			)
+		}
 	}
 
 	return s
