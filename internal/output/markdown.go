@@ -167,8 +167,8 @@ func ToMarkdown(out Root, opts Options, markdownOpts MarkdownOptions) ([]byte, e
 	tmpl := template.New("base")
 	tmpl.Funcs(sprig.TxtFuncMap())
 	tmpl.Funcs(template.FuncMap{
-		"emissionsNotZero": func(pastEmissions, emissions *decimal.Decimal) bool {
-			return pastEmissions != nil && !pastEmissions.IsZero() || emissions != nil && !emissions.IsZero()
+		"showEmissions": func() bool {
+			return contains(opts.Fields, "monthlyEmissions")
 		},
 		"formatCost": func(d *decimal.Decimal) string {
 			if d == nil || d.IsZero() {

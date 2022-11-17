@@ -319,7 +319,7 @@ var CommentMarkdownWithHTMLTemplate = `
       <td align="right">{{ formatCost .PastCost }}</td>
       <td align="right">{{ formatCost .Cost }}</td>
       <td>{{ formatCostChange .PastCost .Cost }}</td>
-      {{- if emissionsNotZero .PastEmissions .Emissions }}
+      {{- if showEmissions }}
       <td align="right">{{ formatEmissions .PastEmissions }}</td>
       <td align="right">{{ formatEmissions .Emissions }}</td>
       <td>{{ formatEmissionsChange .PastEmissions .Emissions }}</td>
@@ -327,7 +327,7 @@ var CommentMarkdownWithHTMLTemplate = `
     </tr>
 {{- end}}
 💰 Infracost cost estimate: **{{ formatCostChangeSentence .Root.Currency .Root.PastTotalMonthlyCost .Root.TotalMonthlyCost true }}**
-{{- if emissionsNotZero .Root.PastTotalMonthlyEmissions .Root.TotalMonthlyEmissions }}
+{{- if showEmissions }}
 🏭 Carbon emissions estimate: **{{ formatEmissionsChangeSentence .Root.PastTotalMonthlyEmissions .Root.TotalMonthlyEmissions true }}**
 {{- end }}
 <table>
@@ -339,7 +339,7 @@ var CommentMarkdownWithHTMLTemplate = `
     <td>Previous Cost</td>
     <td>New Cost</td>
     <td>Diff Cost</td>
-    {{- if emissionsNotZero .Root.PastTotalMonthlyEmissions .Root.TotalMonthlyEmissions }}
+    {{- if showEmissions }}
     <td>Previous Emissions</td>
     <td>New Emissions</td>
     <td>Diff Emissions</td>
