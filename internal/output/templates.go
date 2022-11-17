@@ -319,18 +319,31 @@ var CommentMarkdownWithHTMLTemplate = `
       <td align="right">{{ formatCost .PastCost }}</td>
       <td align="right">{{ formatCost .Cost }}</td>
       <td>{{ formatCostChange .PastCost .Cost }}</td>
+      {{- if emissionsNotZero .PastEmissions .Emissions }}
+      <td align="right">{{ formatEmissions .PastEmissions }}</td>
+      <td align="right">{{ formatEmissions .Emissions }}</td>
+      <td>{{ formatEmissionsChange .PastEmissions .Emissions }}</td>
+      {{- end }}
     </tr>
 {{- end}}
-💰 Infracost estimate: **{{ formatCostChangeSentence .Root.Currency .Root.PastTotalMonthlyCost .Root.TotalMonthlyCost true }}**
+💰 Infracost cost estimate: **{{ formatCostChangeSentence .Root.Currency .Root.PastTotalMonthlyCost .Root.TotalMonthlyCost true }}**
+{{- if emissionsNotZero .Root.PastTotalMonthlyEmissions .Root.TotalMonthlyEmissions }}
+🏭 Carbon emissions estimate: **{{ formatEmissionsChangeSentence .Root.PastTotalMonthlyEmissions .Root.TotalMonthlyEmissions true }}**
+{{- end }}
 <table>
   <thead>
     <td>Project</td>
 {{- range metadataHeaders }}
     <td>{{ . }}</td>
 {{- end }}
-    <td>Previous</td>
-    <td>New</td>
-    <td>Diff</td>
+    <td>Previous Cost</td>
+    <td>New Cost</td>
+    <td>Diff Cost</td>
+    {{- if emissionsNotZero .Root.PastTotalMonthlyEmissions .Root.TotalMonthlyEmissions }}
+    <td>Previous Emissions</td>
+    <td>New Emissions</td>
+    <td>Diff Emissions</td>
+    {{- end }}
   </thead>
 {{- if gt (len .Root.Projects) 1  }}
   <tbody>
@@ -353,7 +366,7 @@ var CommentMarkdownWithHTMLTemplate = `
 {{- else }}
   <tbody>
   {{- range .Root.Projects }}
-    {{- template "summaryRow" dict "Name" .Name "MetadataFields" (. | metadataFields) "PastCost" .PastBreakdown.TotalMonthlyCost "Cost" .Breakdown.TotalMonthlyCost  }}
+    {{- template "summaryRow" dict "Name" .Name "MetadataFields" (. | metadataFields) "PastCost" .PastBreakdown.TotalMonthlyCost "Cost" .Breakdown.TotalMonthlyCost "PastEmissions" .PastBreakdown.TotalMonthlyEmissions "Emissions" .Breakdown.TotalMonthlyEmissions }}
   {{- end }}
   </tbody>
 </table>
@@ -418,10 +431,10 @@ var CommentMarkdownTemplate = `
 {{- if gt (len .Root.Projects) 1  }}
   {{- range .Root.Projects }}
     {{- if hasDiff . }}
-      {{- template "summaryRow" dict "Name" .Name "MetadataFields" (. | metadataFields) "PastCost" .PastBreakdown.TotalMonthlyCost "Cost" .Breakdown.TotalMonthlyCost  }}
+      {{- template "summaryRow" dict "Name" .Name "MetadataFields" (. | metadataFields) "PastCost" .PastBreakdown.TotalMonthlyCost "Cost" .Breakdown.TotalMonthlyCost "PastEmissions" .PastBreakdown.TotalMonthlyEmissions "Emissions" .Breakdown.TotalMonthlyEmissions }}
     {{- end }}
   {{- end }}
-  {{- template "totalRow" dict "Name" "All projects" "PastCost" .Root.PastTotalMonthlyCost "Cost" .Root.TotalMonthlyCost  }}
+  {{- template "totalRow" dict "Name" "All projects" "PastCost" .Root.PastTotalMonthlyCost "Cost" .Root.TotalMonthlyCost "PastEmissions" .Root.PastTotalMonthlyEmissions "Emissions" .Root.TotalMonthlyEmissions }}
 
   {{- if eq .SkippedProjectCount 1 }}
 
@@ -432,7 +445,7 @@ var CommentMarkdownTemplate = `
   {{- end }}
 {{- else }}
   {{- range .Root.Projects }}
-    {{- template "summaryRow" dict "Name" .Name "MetadataFields" (. | metadataFields) "PastCost" .PastBreakdown.TotalMonthlyCost "Cost" .Breakdown.TotalMonthlyCost  }}
+    {{- template "summaryRow" dict "Name" .Name "MetadataFields" (. | metadataFields) "PastCost" .PastBreakdown.TotalMonthlyCost "Cost" .Breakdown.TotalMonthlyCost "PastEmissions" .PastBreakdown.TotalMonthlyEmissions "Emissions" .Breakdown.TotalMonthlyEmissions }}
   {{- end }}
 {{- end }}
 
