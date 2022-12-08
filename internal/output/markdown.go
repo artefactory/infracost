@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"sort"
+	"strings"
 	"text/template"
 	"unicode/utf8"
 
@@ -47,6 +48,29 @@ func formatMarkdownCostChange(currency string, pastCost, cost *decimal.Decimal, 
 	return plusMinus + formatCost(currency, cost) + percentChange
 }
 
+func formatMarkdownEmissionsChange(pastEmissions, emissions *decimal.Decimal) string {
+	if pastEmissions != nil && pastEmissions.Equals(*emissions) {
+		return formatWholeDecimalEmissions(decimal.Zero)
+	}
+
+	percentChange := formatPercentChange(pastEmissions, emissions)
+	if len(percentChange) > 0 {
+		percentChange = " " + "(" + percentChange + ")"
+	}
+
+	plusMinus := "+"
+	if pastEmissions != nil {
+		d := emissions.Sub(*pastEmissions)
+		if d.LessThan(decimal.Zero) {
+			plusMinus = ""
+		}
+
+		return plusMinus + formatEmissions(&d, "kgCO2e") + percentChange
+	}
+
+	return plusMinus + formatEmissions(emissions, "kgCO2e") + percentChange
+}
+
 func formatCostChangeSentence(currency string, pastCost, cost *decimal.Decimal, useEmoji bool) string {
 	up := "📈"
 	down := "📉"
@@ -64,6 +88,25 @@ func formatCostChangeSentence(currency string, pastCost, cost *decimal.Decimal, 
 		}
 	}
 	return "monthly cost will increase by " + formatMarkdownCostChange(currency, pastCost, cost, true) + " " + up
+}
+
+func formatEmissionsChangeSentence(pastEmissions, emissions *decimal.Decimal, useEmoji bool) string {
+	up := "📈"
+	down := "📉"
+
+	if !useEmoji {
+		up = "↑"
+		down = "↓"
+	}
+
+	if pastEmissions != nil {
+		if pastEmissions.Equals(*emissions) {
+			return "emissions will not change"
+		} else if pastEmissions.GreaterThan(*emissions) {
+			return "emissions will decrease by " + formatMarkdownEmissionsChange(pastEmissions, emissions) + " " + down
+		}
+	}
+	return "emissions will increase by " + formatMarkdownEmissionsChange(pastEmissions, emissions) + " " + up
 }
 
 func calculateMetadataToDisplay(projects []Project) (hasModulePath bool, hasWorkspace bool) {
@@ -129,6 +172,9 @@ func ToMarkdown(out Root, opts Options, markdownOpts MarkdownOptions) ([]byte, e
 	tmpl := template.New("base")
 	tmpl.Funcs(sprig.TxtFuncMap())
 	tmpl.Funcs(template.FuncMap{
+		"showEmissions": func() bool {
+			return contains(opts.Fields, "monthlyEmissions")
+		},
 		"formatCost": func(d *decimal.Decimal) string {
 			if d == nil || d.IsZero() {
 				return formatWholeDecimalCurrency(out.Currency, decimal.Zero)
@@ -145,6 +191,11 @@ func ToMarkdown(out Root, opts Options, markdownOpts MarkdownOptions) ([]byte, e
 			}
 			return true
 		},
+		"formatEmissions": func(d *decimal.Decimal) string { return formatEmissions(d, "kgCO2e") },
+		"formatEmissionsChange": func(pastCost, cost *decimal.Decimal) string {
+			return formatMarkdownEmissionsChange(pastCost, cost)
+		},
+		"formatEmissionsChangeSentence": formatEmissionsChangeSentence,
 		"metadataHeaders": func() []string {
 			headers := []string{}
 			if hasModulePath {

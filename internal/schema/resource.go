@@ -19,6 +19,7 @@ type Resource struct {
 	SubResources      []*Resource
 	HourlyCost        *decimal.Decimal
 	MonthlyCost       *decimal.Decimal
+	MonthlyEmissions  *decimal.Decimal
 	IsSkipped         bool
 	NoPrice           bool
 	SkipMessage       string
@@ -33,7 +34,25 @@ type Resource struct {
 func CalculateCosts(project *Project) {
 	for _, r := range project.AllResources() {
 		r.CalculateCosts()
+		r.CalculateEmittedCO2()
 	}
+}
+
+func (r *Resource) CalculateEmittedCO2() {
+	m := decimal.Zero
+	for _, c := range r.CostComponents {
+		c.CalculateEmittedCO2()
+		if c.MonthlyEmissions != nil {
+			m = m.Add(*c.MonthlyEmissions)
+		}
+	}
+	for _, s := range r.SubResources {
+		s.CalculateEmittedCO2()
+		if s.MonthlyEmissions != nil {
+			m = m.Add(*s.MonthlyEmissions)
+		}
+	}
+	r.MonthlyEmissions = &m
 }
 
 func (r *Resource) CalculateCosts() {

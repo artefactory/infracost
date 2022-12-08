@@ -21,8 +21,9 @@ var (
 
 type PricingAPIClient struct {
 	APIClient
-	Currency       string
-	EventsDisabled bool
+	Currency         string
+	EventsDisabled   bool
+	EmissionsEnabled bool
 }
 
 type PriceQueryKey struct {
@@ -76,8 +77,9 @@ func NewPricingAPIClient(ctx *config.RunContext) *PricingAPIClient {
 			tlsConfig: &tlsConfig,
 			uuid:      ctx.UUID(),
 		},
-		Currency:       currency,
-		EventsDisabled: ctx.Config.EventsDisabled,
+		Currency:         currency,
+		EventsDisabled:   ctx.Config.EventsDisabled,
+		EmissionsEnabled: contains(ctx.Config.Fields, "monthlyEmissions"),
 	}
 }
 
@@ -127,16 +129,27 @@ func (c *PricingAPIClient) buildQuery(product *schema.ProductFilter, price *sche
 	v["productFilter"] = product
 	v["priceFilter"] = price
 
+	emissionsFilter := ""
+	if c.EmissionsEnabled {
+		emissionsFilter = fmt.Sprintf(`
+			emissions(filter: {}){
+				emissionHash
+				%s
+			}
+		`, "emissions")
+	}
+
 	query := fmt.Sprintf(`
 		query($productFilter: ProductFilter!, $priceFilter: PriceFilter) {
 			products(filter: $productFilter) {
 				prices(filter: $priceFilter) {
 					priceHash
 					%s
-				}
+				},
+				%s
 			}
 		}
-	`, c.Currency)
+	`, c.Currency, emissionsFilter)
 
 	return GraphQLQuery{query, v}
 }
@@ -173,4 +186,13 @@ func (c *PricingAPIClient) zipQueryResults(k []PriceQueryKey, r []gjson.Result) 
 	}
 
 	return res
+}
+
+func contains(arr []string, e string) bool {
+	for _, a := range arr {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
