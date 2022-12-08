@@ -36,6 +36,7 @@ func formatCost2DP(currency string, d *decimal.Decimal) string {
 	}
 	return formatRoundedDecimalCurrency(currency, *d)
 }
+
 func formatEmissions(emissions *decimal.Decimal, unit string) string {
 	if emissions == nil {
 		return "-"

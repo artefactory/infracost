@@ -51,7 +51,7 @@ td.name {
   max-width: 32rem;
 }
 
-td.monthly-quantity, td.price, td.hourly-cost, td.monthly-cost td.monthly-emissions {
+td.monthly-quantity, td.price, td.hourly-cost, td.monthly-cost, td.monthly-emissions {
   text-align: right;
 }
 

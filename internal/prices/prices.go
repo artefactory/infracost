@@ -185,9 +185,9 @@ func setComponentEmissions(ctx *config.RunContext, currency string, r *schema.Re
 
 	// Some resources may have identical records in CPAPI for the same product
 	// filters, several products are always returned and they can only be
-	// distinguished by their prices. However if we pick the first product it may not
-	// have the price due to price filter and the lookup fails. Filtering the
-	// products with prices helps to solve that.
+	// distinguished by their emissions. However if we pick the first product it may not
+	// have the emissions due to emissions filter and the lookup fails. Filtering the
+	// products with emissions helps to solve that.
 	productsWithEmissions := []gjson.Result{}
 	for _, product := range products {
 		if len(product.Get("emissions").Array()) > 0 {
@@ -197,7 +197,7 @@ func setComponentEmissions(ctx *config.RunContext, currency string, r *schema.Re
 
 	if len(productsWithEmissions) == 0 {
 		log.Warnf("No emissions found for %s %s, using 0.00", r.Name, c.Name)
-		setResourceWarningEvent(ctx, r, "No prices found")
+		setResourceWarningEvent(ctx, r, "No emissions found")
 		c.SetEmission(decimal.Zero)
 		return
 	}
@@ -209,7 +209,7 @@ func setComponentEmissions(ctx *config.RunContext, currency string, r *schema.Re
 
 	emissions := productsWithEmissions[0].Get("emissions").Array()
 	if len(emissions) > 1 {
-		log.Warnf("Multiple emissions found for %s %s, using the first price", r.Name, c.Name)
+		log.Warnf("Multiple emissions found for %s %s, using the first emissions value", r.Name, c.Name)
 		setResourceWarningEvent(ctx, r, "Multiple emissions found")
 	}
 

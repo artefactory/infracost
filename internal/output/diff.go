@@ -185,7 +185,7 @@ func resourceToDiff(currency string, diffResource Resource, oldResource *Resourc
 		}
 		if showEmissions {
 			if oldEmissions == nil && newEmissions == nil {
-				s += "  Monthly emissions depends on usage\n"
+				s += "  Monthly emissions depend on usage\n"
 			} else {
 				s += fmt.Sprintf("  %s%s\n",
 					formatEmissionsChange(diffResource.MonthlyEmissions, "kgCO2e"),
@@ -271,7 +271,7 @@ func costComponentToDiff(currency string, diffComponent CostComponent, oldCompon
 
 	if showEmissions {
 		if oldEmissions == nil && newEmissions == nil {
-			s += "  Monthly emissions depends on usage\n"
+			s += "  Monthly emissions depend on usage\n"
 		} else {
 			s += fmt.Sprintf("  %s%s\n",
 				formatEmissionsChange(diffComponent.MonthlyEmissions, "kgCO2e"),

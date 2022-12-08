@@ -191,9 +191,6 @@ func ToMarkdown(out Root, opts Options, markdownOpts MarkdownOptions) ([]byte, e
 			return formatMarkdownEmissionsChange(pastCost, cost)
 		},
 		"formatEmissionsChangeSentence": formatEmissionsChangeSentence,
-		"formatFields": func(fields []string) string {
-			return strings.Join(fields, ", ")
-		},
 		"metadataHeaders": func() []string {
 			headers := []string{}
 			if hasModulePath {
