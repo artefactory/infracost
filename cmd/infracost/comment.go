@@ -91,6 +91,7 @@ func buildCommentBody(cmd *cobra.Command, ctx *config.RunContext, paths []string
 		NoColor:           ctx.Config.NoColor,
 		ShowSkipped:       true,
 		PolicyChecks:      policyChecks,
+		Fields:            ctx.Config.Fields,
 	}
 
 	b, err := output.ToMarkdown(combined, opts, mdOpts)

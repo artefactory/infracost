@@ -74,9 +74,19 @@ func ToTable(out Root, opts Options) ([]byte, error) {
 	totalOut := formatCost2DP(out.Currency, out.TotalMonthlyCost)
 
 	overallTitle := formatTitleWithCurrency(" OVERALL TOTAL", out.Currency)
-	s += fmt.Sprintf("%s%s",
+	emissionsShift := 0
+	priceShift := tableLen - (len(overallTitle) + 1)
+	totalEmissions := ""
+	if contains(opts.Fields, "monthlyEmissions") {
+		emissionsShift = len("Monthly Emissions") + 2
+		priceShift -= emissionsShift
+		totalEmissions = fmt.Sprintf("%*s", emissionsShift, formatEmissions(out.TotalMonthlyEmissions, "kgCO2e"))
+	}
+
+	s += fmt.Sprintf("%s%s%s",
 		ui.BoldString(overallTitle),
-		fmt.Sprintf("%*s ", tableLen-(len(overallTitle)+1), totalOut), // pad based on the last line length
+		fmt.Sprintf("%*s", priceShift, totalOut),
+		totalEmissions, // pad based on the last line length
 	)
 
 	summaryMsg := out.summaryMessage(opts.ShowSkipped)
@@ -156,6 +166,15 @@ func tableForBreakdown(currency string, breakdown Breakdown, fields []string, in
 		})
 		i++
 	}
+	if contains(fields, "monthlyEmissions") {
+		headers = append(headers, ui.UnderlineString("Monthly Emissions"))
+		columns = append(columns, table.ColumnConfig{
+			Number:      i,
+			Align:       text.AlignRight,
+			AlignHeader: text.AlignRight,
+		})
+		i++
+	}
 
 	t.AppendRow(table.Row{""})
 
@@ -183,10 +202,16 @@ func tableForBreakdown(currency string, breakdown Breakdown, fields []string, in
 		var totalCostRow table.Row
 		totalCostRow = append(totalCostRow, ui.BoldString(formatTitleWithCurrency("Project total", currency)))
 		numOfFields := i - 3
+		if contains(fields, "monthlyEmissions") {
+			numOfFields -= 1
+		}
 		for q := 0; q < numOfFields; q++ {
 			totalCostRow = append(totalCostRow, "")
 		}
 		totalCostRow = append(totalCostRow, formatCost2DP(currency, breakdown.TotalMonthlyCost))
+		if contains(fields, "monthlyEmissions") {
+			totalCostRow = append(totalCostRow, ui.BoldString(formatEmissions(breakdown.TotalMonthlyEmissions, "kgCO2e")))
+		}
 		t.AppendRow(totalCostRow)
 	}
 
@@ -256,6 +281,9 @@ func buildCostComponentRows(t table.Writer, currency string, costComponents []Co
 			}
 			if contains(fields, "monthlyCost") {
 				tableRow = append(tableRow, formatCost2DP(currency, c.MonthlyCost))
+			}
+			if contains(fields, "monthlyEmissions") {
+				tableRow = append(tableRow, formatEmissions(c.MonthlyEmissions, "kgCO2e"))
 			}
 
 			t.AppendRow(tableRow)

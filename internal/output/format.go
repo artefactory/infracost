@@ -37,6 +37,18 @@ func formatCost2DP(currency string, d *decimal.Decimal) string {
 	return formatRoundedDecimalCurrency(currency, *d)
 }
 
+func formatEmissions(emissions *decimal.Decimal, unit string) string {
+	if emissions == nil {
+		return "-"
+	}
+	return fmt.Sprintf("%s %s", fmt.Sprint(formatRoundedDecimalEmissions(*emissions)), unit)
+}
+
+func formatRoundedDecimalEmissions(d decimal.Decimal) *decimal.Decimal {
+	d = d.Round(1)
+	return &d
+}
+
 func formatPrice(currency string, d decimal.Decimal) string {
 	if d.LessThan(decimal.NewFromFloat(0.1)) {
 		return formatFullDecimalCurrency(currency, d)
@@ -65,6 +77,10 @@ func formatWholeDecimalCurrency(currency string, d decimal.Decimal) string {
 	scaledInt := decimalToScaledInt(d, 0, 0)
 	formatter.Fraction = scaledInt.FractionLength
 	return formatter.Format(scaledInt.Number)
+}
+
+func formatWholeDecimalEmissions(d decimal.Decimal) string {
+	return fmt.Sprintf("%s", fmt.Sprint(d))
 }
 
 type scaledInt64 struct {
@@ -111,6 +127,10 @@ func formatTitleWithCurrency(title, currency string) string {
 		return title
 	}
 	return fmt.Sprintf("%s (%s)", title, currency)
+}
+
+func formatTitleEmissions(title string) string {
+	return fmt.Sprintf("%s", title)
 }
 
 func truncateMiddle(s string, maxLen int, fill string) string {
